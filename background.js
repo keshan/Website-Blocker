@@ -91,6 +91,19 @@ function updateTimer(tab) {
         const dailyUsage = result.dailyUsage || {};
         dailyUsage[matchedSite] = (dailyUsage[matchedSite] || 0) + 1;
 
+        // Calculate time left
+        const timeLeft = (websiteSettings[matchedSite].timeLimit * 60) - dailyUsage[matchedSite];
+
+        // Send time update to content script
+        try {
+          await chrome.tabs.sendMessage(currentTab.id, {
+            type: 'timeUpdate',
+            timeLeft: timeLeft
+          });
+        } catch (error) {
+          console.error('Error sending time update:', error);
+        }
+
         // If time limit exceeded, block the website
         if (dailyUsage[matchedSite] >= websiteSettings[matchedSite].timeLimit * 60) {
           await chrome.tabs.update(tab.id, { url: 'blocked.html' });
