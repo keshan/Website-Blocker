@@ -1,6 +1,7 @@
 let websiteTimers = {};
 let websiteSettings = {};
 let activeTabDomain = null;
+let currentVisitStart = null;
 
 // Load settings when extension starts
 chrome.runtime.onStartup.addListener(loadSettings);
@@ -36,85 +37,140 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// Handle when tab becomes inactive
+// Handle when tab becomes inactive or window loses focus
 chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     stopAllTimers();
   }
 });
 
-// Function to normalize domain names
+chrome.tabs.onActivated.addListener(() => {
+  stopAllTimers();
+});
+
 function normalizeDomain(domain) {
-  // Remove www. if present
   domain = domain.replace(/^www\./, '');
-  // Remove any trailing slash
   domain = domain.replace(/\/$/, '');
   return domain;
 }
 
-function stopAllTimers() {
+async function stopAllTimers() {
+  try {
+    if (activeTabDomain && currentVisitStart) {
+      const endTime = new Date();
+      const duration = Math.round((endTime - currentVisitStart) / 1000);
+      
+      if (duration >= 1) {
+        const result = await chrome.storage.local.get(['websiteVisits', 'dailyUsage']);
+        const visits = result.websiteVisits || [];
+        const dailyUsage = result.dailyUsage || {};
+
+        // Update visits history for all sites
+        visits.push({
+          domain: activeTabDomain,
+          timestamp: currentVisitStart.toISOString(),
+          duration: duration,
+          isMonitored: !!websiteSettings[activeTabDomain]
+        });
+
+        // Update daily usage only for monitored sites
+        if (websiteSettings[activeTabDomain]) {
+          dailyUsage[activeTabDomain] = (dailyUsage[activeTabDomain] || 0) + duration;
+        }
+
+        await chrome.storage.local.set({ 
+          websiteVisits: visits,
+          dailyUsage: dailyUsage
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error stopping timers:', error);
+  }
+
   Object.values(websiteTimers).forEach(timer => clearInterval(timer));
   websiteTimers = {};
   activeTabDomain = null;
+  currentVisitStart = null;
 }
 
-function updateTimer(tab) {
-  stopAllTimers();
+async function updateTimer(tab) {
+  await stopAllTimers();
 
   if (!tab.url || !tab.active) return;
 
   try {
     const domain = normalizeDomain(new URL(tab.url).hostname);
     
-    // Check if this domain or its www version is in settings
-    const matchedSite = Object.keys(websiteSettings).find(site => 
+    // Skip tracking for extension pages and empty tabs
+    if (domain === '' || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+      return;
+    }
+
+    activeTabDomain = domain;
+    currentVisitStart = new Date();
+
+    // Check if this is a monitored site
+    const isMonitored = Object.keys(websiteSettings).some(site => 
       normalizeDomain(site) === domain
     );
 
-    if (!matchedSite) return;
-
-    activeTabDomain = matchedSite;
-
-    // Start timer for current website
-    websiteTimers[domain] = setInterval(async () => {
-      try {
-        // Verify tab is still active
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        const currentTab = tabs[0];
-        if (!currentTab || normalizeDomain(new URL(currentTab.url).hostname) !== domain) {
-          stopAllTimers();
-          return;
-        }
-
-        // Update time usage
-        const result = await chrome.storage.local.get(['dailyUsage']);
-        const dailyUsage = result.dailyUsage || {};
-        dailyUsage[matchedSite] = (dailyUsage[matchedSite] || 0) + 1;
-
-        // Calculate time left
-        const timeLeft = (websiteSettings[matchedSite].timeLimit * 60) - dailyUsage[matchedSite];
-
-        // Send time update to content script
+    if (isMonitored) {
+      // Start timer for monitored website
+      websiteTimers[domain] = setInterval(async () => {
         try {
-          await chrome.tabs.sendMessage(currentTab.id, {
-            type: 'timeUpdate',
-            timeLeft: timeLeft
-          });
-        } catch (error) {
-          console.error('Error sending time update:', error);
-        }
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const currentTab = tabs[0];
+          
+          if (!currentTab || normalizeDomain(new URL(currentTab.url).hostname) !== domain) {
+            await stopAllTimers();
+            return;
+          }
 
-        // If time limit exceeded, block the website
-        if (dailyUsage[matchedSite] >= websiteSettings[matchedSite].timeLimit * 60) {
-          await chrome.tabs.update(tab.id, { url: 'blocked.html' });
-          stopAllTimers();
-        } else {
+          const result = await chrome.storage.local.get(['dailyUsage']);
+          const dailyUsage = result.dailyUsage || {};
+          
+          // Increment the time spent
+          dailyUsage[domain] = (dailyUsage[domain] || 0) + 1;
+          
+          const totalSeconds = dailyUsage[domain];
+          const timeLeft = (websiteSettings[domain].timeLimit * 60) - totalSeconds;
+
+          // Save the updated usage
           await chrome.storage.local.set({ dailyUsage });
+
+          try {
+            await chrome.tabs.sendMessage(currentTab.id, {
+              type: 'timeUpdate',
+              timeLeft: timeLeft
+            });
+          } catch (error) {
+            console.error('Error sending time update:', error);
+          }
+
+          if (timeLeft <= 0) {
+            await chrome.tabs.update(tab.id, { url: 'blocked.html' });
+            await stopAllTimers();
+          }
+        } catch (error) {
+          console.error('Error in timer interval:', error);
         }
-      } catch (error) {
-        console.error('Error updating timer:', error);
-      }
-    }, 1000); // Update every second
+      }, 1000);
+    } else {
+      // For non-monitored sites, just track time without limits
+      websiteTimers[domain] = setInterval(async () => {
+        try {
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const currentTab = tabs[0];
+          
+          if (!currentTab || normalizeDomain(new URL(currentTab.url).hostname) !== domain) {
+            await stopAllTimers();
+          }
+        } catch (error) {
+          console.error('Error in unmonitored site timer:', error);
+        }
+      }, 1000);
+    }
   } catch (error) {
     console.error('Error processing URL:', error);
   }
@@ -125,4 +181,15 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.websiteSettings) {
     websiteSettings = changes.websiteSettings.newValue;
   }
-}); 
+});
+
+// Reset daily usage at midnight
+setInterval(async () => {
+  const now = new Date();
+  if (now.getHours() === 0 && now.getMinutes() === 0) {
+    await chrome.storage.local.set({
+      dailyUsage: {},
+      lastReset: now.toISOString()
+    });
+  }
+}, 60000); 

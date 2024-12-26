@@ -17,4 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
   optionsBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
+
+  const analyticsBtn = document.getElementById('analyticsBtn');
+  analyticsBtn.addEventListener('click', () => {
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('analytics/analytics.html')
+    });
+  });
 }); 

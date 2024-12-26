@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Website Usage Analytics</title>
+  <link rel="stylesheet" href="analytics.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Website Usage Analytics</h1>
+    
+    <div class="filters">
+      <div class="date-filter">
+        <label for="startDate">From:</label>
+        <input type="date" id="startDate">
+        <label for="endDate">To:</label>
+        <input type="date" id="endDate">
+      </div>
+      <button id="applyFilter">Apply Filter</button>
+    </div>
+
+    <div class="analytics-container">
+      <div class="summary-stats">
+        <div class="stat-card">
+          <h3>Total Websites</h3>
+          <p id="totalWebsites">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Time</h3>
+          <p id="totalTime">0 minutes</p>
+        </div>
+      </div>
+
+      <div class="website-list">
+        <h2>Website Usage Details</h2>
+        <table id="analyticsTable">
+          <thead>
+            <tr>
+              <th>Website</th>
+              <th>Visit Time</th>
+              <th>Duration</th>
+              <th>Date</th>
+              <th>Monitored</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="analytics.js"></script>
+</body>
+</html> 

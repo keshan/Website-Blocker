@@ -31,6 +31,10 @@
     }
   },
   "options_page": "options/options.html",
+  "web_accessible_resources": [{
+    "resources": ["analytics/analytics.html"],
+    "matches": ["<all_urls>"]
+  }],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
