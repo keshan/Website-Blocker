@@ -9,6 +9,7 @@ A Chrome extension that helps you manage your time on specific websites by setti
 - Automatic blocking when time limit is reached
 - Daily reset of time limits at midnight
 - Support for both www and non-www versions of websites
+- Draggable timer overlay showing remaining time
 - Clean and simple interface
 
 ## Installation
@@ -40,6 +41,11 @@ The options page shows a table with:
 ### Understanding How It Works
 
 - Time tracking starts when you actively view a monitored website
+- A draggable timer appears in the top-right corner showing remaining time
+- You can:
+  - Drag the timer to any position on the screen
+  - See time remaining in MM:SS format
+  - Timer stays visible while scrolling
 - The timer pauses when:
   - You switch to a different tab
   - The browser window loses focus
@@ -56,6 +62,8 @@ The options page shows a table with:
 - Time is counted in seconds but displayed in minutes
 - You can modify or remove website limits at any time
 - The blocking is per-domain, so it works across all pages of the monitored websites
+- The timer position resets to top-right when you reload or visit a different page
+- The timer overlay has maximum z-index to stay above all website content
 
 ## Technical Details
 
@@ -64,6 +72,7 @@ The extension uses:
 - Chrome Tabs API for tracking active tabs
 - Chrome Windows API for detecting window focus
 - Background service worker for continuous time tracking
+- Content script for timer overlay functionality
 - Real-time updates in the options page
 
 ## Privacy
