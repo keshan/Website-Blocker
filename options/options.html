@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Website Time Limit Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Website Time Limit Settings</h1>
+    
+    <div class="section">
+      <h2>Add Website Time Limit</h2>
+      <div class="input-group">
+        <input type="text" id="newSite" placeholder="Enter website domain (e.g., facebook.com)">
+        <input type="number" id="timeLimit" placeholder="Minutes allowed per day" min="1">
+        <button id="addSite">Add Website</button>
+      </div>
+      
+      <div class="website-list">
+        <h3>Current Website Limits</h3>
+        <table id="siteList">
+          <thead>
+            <tr>
+              <th>Website</th>
+              <th>Daily Time Limit</th>
+              <th>Time Used Today</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html> 
