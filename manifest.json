@@ -31,8 +31,14 @@
     }
   },
   "options_page": "options/options.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "web_accessible_resources": [{
-    "resources": ["analytics/analytics.html"],
+    "resources": [
+      "analytics/analytics.html",
+      "lib/*"
+    ],
     "matches": ["<all_urls>"]
   }],
   "icons": {

@@ -43,72 +43,117 @@ function getDateRange(range) {
   return { start, end };
 }
 
-function createChart(data, dateRange) {
-  const ctx = document.getElementById('timeChart').getContext('2d');
+function createCharts(data, dateRange) {
+  const chartsContainer = document.querySelector('.chart-section');
+  chartsContainer.innerHTML = '';
   
-  // Generate date labels for the selected range
-  const labels = [];
-  const current = new Date(dateRange.start);
-  while (current <= dateRange.end) {
-    labels.push(getDateString(current));
-    current.setDate(current.getDate() + 1);
-  }
+  const chartWrapper = document.createElement('div');
+  chartWrapper.className = 'single-chart-container';
   
-  // Process data for each site
-  const datasets = Object.keys(data).map(site => {
-    const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-    return {
-      label: site,
-      data: labels.map(date => data[site].dailyTime[date] || 0),
-      borderColor: color,
-      backgroundColor: color + '20',
-      tension: 0.3,
-      fill: true
-    };
-  });
+  const canvas = document.createElement('canvas');
+  chartWrapper.appendChild(canvas);
+  chartsContainer.appendChild(chartWrapper);
+  
+  // Process and sort sites by total time
+  const siteData = Object.entries(data)
+    .map(([site, siteData]) => {
+      const totalTime = Object.entries(siteData.dailyTime)
+        .filter(([date]) => {
+          const dateObj = new Date(date);
+          return dateObj >= dateRange.start && dateObj <= dateRange.end;
+        })
+        .reduce((sum, [, time]) => sum + time, 0);
+      
+      return { site, totalTime };
+    })
+    .sort((a, b) => b.totalTime - a.totalTime);
 
-  if (window.timeChart) {
-    window.timeChart.destroy();
+  console.log('Site Data:', siteData);
+  console.log('Date Range:', dateRange);
+
+  if (siteData.length === 0) {
+    const noDataMessage = document.createElement('div');
+    noDataMessage.style.textAlign = 'center';
+    noDataMessage.style.padding = '20px';
+    noDataMessage.textContent = 'No data available for the selected period';
+    chartWrapper.appendChild(noDataMessage);
+    return;
   }
 
-  window.timeChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        intersect: false,
-        mode: 'index'
+  try {
+    const ctx = canvas.getContext('2d');
+    
+    // Ensure Chart is available
+    if (typeof Chart === 'undefined') {
+      throw new Error('Chart.js is not loaded');
+    }
+
+    // Prepare the data
+    const labels = siteData.map(item => item.site);
+    const values = siteData.map(item => item.totalTime);
+    
+    console.log('Chart Data:', { labels, values });
+
+    const chartConfig = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Time Spent',
+          data: values,
+          backgroundColor: labels.map((_, index) => 
+            `hsl(${(360 / labels.length) * index}, 70%, 50%)`
+          )
+        }]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Time (seconds)'
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: {
+            display: false
           },
-          ticks: {
-            callback: function(value) {
-              return formatTime(value);
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return `Time spent: ${formatTime(context.parsed.x)}`;
+              }
             }
           }
-        }
-      },
-      plugins: {
-        legend: {
-          position: 'bottom'
         },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              return `${context.dataset.label}: ${formatTime(context.parsed.y)}`;
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => formatTime(value)
+            }
+          },
+          y: {
+            grid: {
+              display: false
             }
           }
         }
       }
-    }
-  });
+    };
+
+    console.log('Chart Config:', chartConfig);
+    
+    // Create the chart
+    const chart = new Chart(ctx, chartConfig);
+    console.log('Chart created successfully');
+
+  } catch (error) {
+    console.error('Detailed error creating chart:', error);
+    console.error('Error stack:', error.stack);
+    const errorMessage = document.createElement('div');
+    errorMessage.style.textAlign = 'center';
+    errorMessage.style.padding = '20px';
+    errorMessage.style.color = 'red';
+    errorMessage.textContent = `Error creating chart: ${error.message}`;
+    chartWrapper.appendChild(errorMessage);
+  }
 }
 
 function updateSummaryStats(data, dateRange) {
@@ -169,7 +214,7 @@ function loadAnalytics(range = 'today') {
     const siteTimers = result.siteTimers || {};
     updateSummaryStats(siteTimers, dateRange);
     displaySiteStats(siteTimers, dateRange);
-    createChart(siteTimers, dateRange);
+    createCharts(siteTimers, dateRange);
   });
 }
 
