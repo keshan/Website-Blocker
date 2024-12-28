@@ -45,115 +45,210 @@ function getDateRange(range) {
 
 function createCharts(data, dateRange) {
   const chartsContainer = document.querySelector('.chart-section');
-  chartsContainer.innerHTML = '';
-  
-  const chartWrapper = document.createElement('div');
-  chartWrapper.className = 'single-chart-container';
-  
-  const canvas = document.createElement('canvas');
-  chartWrapper.appendChild(canvas);
-  chartsContainer.appendChild(chartWrapper);
-  
-  // Process and sort sites by total time
+  chartsContainer.innerHTML = `
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Time Distribution by Site</h3>
+        <canvas id="siteDistributionChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Daily Usage Trends</h3>
+        <canvas id="dailyTrendsChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Peak Usage Hours</h3>
+        <canvas id="hourlyUsageChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Weekly Usage Pattern</h3>
+        <canvas id="weeklyPatternChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  createSiteDistributionChart(data, dateRange);
+  createDailyTrendsChart(data, dateRange);
+  createHourlyUsageChart(data, dateRange);
+  createWeeklyPatternChart(data, dateRange);
+}
+
+function createSiteDistributionChart(data, dateRange) {
+  const ctx = document.getElementById('siteDistributionChart').getContext('2d');
   const siteData = Object.entries(data)
-    .map(([site, siteData]) => {
-      const totalTime = Object.entries(siteData.dailyTime)
+    .map(([site, siteData]) => ({
+      site,
+      totalTime: Object.entries(siteData.dailyTime)
         .filter(([date]) => {
           const dateObj = new Date(date);
           return dateObj >= dateRange.start && dateObj <= dateRange.end;
         })
-        .reduce((sum, [, time]) => sum + time, 0);
-      
-      return { site, totalTime };
-    })
+        .reduce((sum, [, time]) => sum + time, 0)
+    }))
     .sort((a, b) => b.totalTime - a.totalTime);
 
-  console.log('Site Data:', siteData);
-  console.log('Date Range:', dateRange);
-
-  if (siteData.length === 0) {
-    const noDataMessage = document.createElement('div');
-    noDataMessage.style.textAlign = 'center';
-    noDataMessage.style.padding = '20px';
-    noDataMessage.textContent = 'No data available for the selected period';
-    chartWrapper.appendChild(noDataMessage);
-    return;
-  }
-
-  try {
-    const ctx = canvas.getContext('2d');
-    
-    // Ensure Chart is available
-    if (typeof Chart === 'undefined') {
-      throw new Error('Chart.js is not loaded');
-    }
-
-    // Prepare the data
-    const labels = siteData.map(item => item.site);
-    const values = siteData.map(item => item.totalTime);
-    
-    console.log('Chart Data:', { labels, values });
-
-    const chartConfig = {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Time Spent',
-          data: values,
-          backgroundColor: labels.map((_, index) => 
-            `hsl(${(360 / labels.length) * index}, 70%, 50%)`
-          )
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                return `Time spent: ${formatTime(context.parsed.x)}`;
-              }
-            }
-          }
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: siteData.map(item => item.site),
+      datasets: [{
+        data: siteData.map(item => item.totalTime),
+        backgroundColor: siteData.map((_, index) => 
+          `hsl(${(360 / siteData.length) * index}, 70%, 50%)`
+        )
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'right'
         },
-        scales: {
-          x: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => formatTime(value)
-            }
-          },
-          y: {
-            grid: {
-              display: false
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((context.raw / total) * 100).toFixed(1);
+              return `${context.label}: ${formatTime(context.raw)} (${percentage}%)`;
             }
           }
         }
       }
-    };
+    }
+  });
+}
 
-    console.log('Chart Config:', chartConfig);
-    
-    // Create the chart
-    const chart = new Chart(ctx, chartConfig);
-    console.log('Chart created successfully');
-
-  } catch (error) {
-    console.error('Detailed error creating chart:', error);
-    console.error('Error stack:', error.stack);
-    const errorMessage = document.createElement('div');
-    errorMessage.style.textAlign = 'center';
-    errorMessage.style.padding = '20px';
-    errorMessage.style.color = 'red';
-    errorMessage.textContent = `Error creating chart: ${error.message}`;
-    chartWrapper.appendChild(errorMessage);
+function createDailyTrendsChart(data, dateRange) {
+  const ctx = document.getElementById('dailyTrendsChart').getContext('2d');
+  const labels = [];
+  const current = new Date(dateRange.start);
+  
+  while (current <= dateRange.end) {
+    labels.push(getDateString(current));
+    current.setDate(current.getDate() + 1);
   }
+
+  const datasets = Object.entries(data).map(([site, siteData]) => {
+    const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+    return {
+      label: site,
+      data: labels.map(date => siteData.dailyTime[date] || 0),
+      borderColor: color,
+      backgroundColor: color + '20',
+      tension: 0.4,
+      fill: true
+    };
+  });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => formatTime(value)
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${formatTime(context.raw)}`
+          }
+        }
+      }
+    }
+  });
+}
+
+function createHourlyUsageChart(data, dateRange) {
+  const ctx = document.getElementById('hourlyUsageChart').getContext('2d');
+  const hourlyData = new Array(24).fill(0);
+  
+  // This is a placeholder - you'll need to modify your data collection to include hour information
+  // For now, showing a sample pattern
+  for (let i = 0; i < 24; i++) {
+    hourlyData[i] = Math.random() * 100;
+  }
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+      datasets: [{
+        label: 'Usage by Hour',
+        data: hourlyData,
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Average Time (minutes)'
+          }
+        }
+      }
+    }
+  });
+}
+
+function createWeeklyPatternChart(data, dateRange) {
+  const ctx = document.getElementById('weeklyPatternChart').getContext('2d');
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const weeklyData = new Array(7).fill(0);
+
+  Object.values(data).forEach(siteData => {
+    Object.entries(siteData.dailyTime).forEach(([date, time]) => {
+      const dateObj = new Date(date);
+      if (dateObj >= dateRange.start && dateObj <= dateRange.end) {
+        weeklyData[dateObj.getDay()] += time;
+      }
+    });
+  });
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: days,
+      datasets: [{
+        label: 'Usage Pattern',
+        data: weeklyData,
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => formatTime(value)
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.label}: ${formatTime(context.raw)}`
+          }
+        }
+      }
+    }
+  });
 }
 
 function updateSummaryStats(data, dateRange) {
