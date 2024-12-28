@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Website Blocker Analytics</title>
+  <link rel="stylesheet" type="text/css" href="analytics.css">
+  <script src="../lib/chart.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header-section">
+      <h1>Website Analytics</h1>
+      <button id="clearDataBtn" class="danger-btn" title="Clear all analytics data">
+        Clear Analytics Data
+      </button>
+    </div>
+    
+    <div class="time-range-selector">
+      <button class="time-btn active" data-range="today">Today</button>
+      <button class="time-btn" data-range="week">This Week</button>
+      <button class="time-btn" data-range="month">This Month</button>
+      <button class="time-btn" data-range="all">All Time</button>
+    </div>
+
+    <div class="dashboard">
+      <div class="summary-cards">
+        <div class="summary-card">
+          <h3>Total Time Today</h3>
+          <p id="totalTimeToday">0h 0m</p>
+        </div>
+        <div class="summary-card">
+          <h3>Most Visited Site</h3>
+          <p id="mostVisitedSite">-</p>
+        </div>
+        <div class="summary-card">
+          <h3>Sites Tracked</h3>
+          <p id="sitesTracked">0</p>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="single-chart-container">
+          <canvas id="timeChart"></canvas>
+        </div>
+      </div>
+
+      <div class="sites-details">
+        <h2>Site-wise Statistics</h2>
+        <div id="dailyStats" class="sites-grid"></div>
+      </div>
+    </div>
+  </div>
+  <script src="analytics.js"></script>
+</body>
+</html> 

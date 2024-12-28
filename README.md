@@ -1,98 +1,135 @@
-# Website Time Limiter Chrome Extension
+# Website Time Blocker Chrome Extension
 
-A Chrome extension that helps you manage your time on specific websites by setting daily time limits. Once you reach your daily time limit for a website, you'll be blocked from accessing it until midnight.
+A powerful Chrome extension that helps users manage their time on websites by tracking usage and implementing customizable time limits.
 
 ## Features
 
-- Set daily time limits for specific websites
-- Real-time tracking of time spent on each website
-- Automatic blocking when time limit is reached
-- Daily reset of time limits at midnight
-- Support for both www and non-www versions of websites
-- Draggable timer overlay showing remaining time
-- Clean and simple interface
+- **Website Time Tracking**: Automatically tracks time spent on each website
+- **Interactive Analytics Dashboard**: 
+  - Bar charts showing time spent per site
+  - Daily usage trends
+  - Peak usage hours visualization
+  - Weekly usage patterns
+- **Time Limits**: Set custom time limits for specific websites
+- **Blocking Mechanism**: Automatically blocks websites when time limits are reached
+- **Flexible Time Ranges**: View analytics for different time periods (Today, Week, Month, All)
+- **Data Management**: Option to clear analytics data when needed
 
 ## Installation
 
-1. Download or clone this repository
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the extension directory
+### From Chrome Web Store
+1. Visit the Chrome Web Store (link coming soon)
+2. Click "Add to Chrome"
+3. Follow the prompts to install
 
-## How to Use
+### Local Development Installation
+1. Clone this repository
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" in the top right
+4. Click "Load unpacked"
+5. Select the extension directory
 
-### Adding Websites to Monitor
+## Usage Guide
 
-1. Click the extension icon in your Chrome toolbar
-2. Click "Open Settings" to access the options page
-3. In the "Add Website Time Limit" section:
-   - Enter the website domain (e.g., "facebook.com", "youtube.com")
-   - Enter the daily time limit in minutes
-   - Click "Add Website"
+### Setting Up Time Limits
+1. Click the extension icon in Chrome toolbar
+2. Click "Options" or right-click the icon and select "Options"
+3. Enter the website URL and desired time limit
+4. Click "Add" to save the limit
 
-### Managing Website Limits
+### Viewing Analytics
+1. Click the extension icon
+2. Select "View Analytics"
+3. Use the time range buttons (Today, Week, Month, All) to view different periods
+4. Explore various charts showing your website usage patterns
 
-The options page shows a table with:
-- Website domains
-- Daily time limits
-- Time used today
-- Option to remove websites from monitoring
+### Managing Data
+- To clear all analytics data:
+  1. Go to the Analytics page
+  2. Click the "Clear Data" button
+  3. Confirm the action
 
-### Understanding How It Works
+### Understanding Charts
+1. **Time Distribution by Site**: Doughnut chart showing proportion of time spent on each site
+2. **Daily Usage Trends**: Line chart tracking usage over time
+3. **Peak Usage Hours**: Bar chart showing most active hours
+4. **Weekly Usage Pattern**: Radar chart displaying weekly patterns
 
-- Time tracking starts when you actively view a monitored website
-- A draggable timer appears in the top-right corner showing remaining time
-- You can:
-  - Drag the timer to any position on the screen
-  - See time remaining in MM:SS format
-  - Timer stays visible while scrolling
-- The timer pauses when:
-  - You switch to a different tab
-  - The browser window loses focus
-  - You minimize the browser
-- At midnight, all time counters reset automatically
-- When you reach the time limit for a website:
-  - You'll be redirected to a blocking page
-  - Access will be blocked until midnight
+## Development
 
-### Tips
+### Project Structure
+```
+├── manifest.json          # Extension configuration
+├── background.js         # Background service worker
+├── content.js           # Content script for page interaction
+├── popup/               # Extension popup interface
+│   ├── popup.html
+│   ├── popup.css
+│   └── popup.js
+├── options/            # Options page
+│   ├── options.html
+│   ├── options.css
+│   └── options.js
+├── analytics/         # Analytics dashboard
+│   ├── analytics.html
+│   ├── analytics.css
+│   └── analytics.js
+├── lib/              # External libraries
+│   └── chart.min.js  # Chart.js for visualizations
+└── icons/           # Extension icons
+    ├── icon16.png
+    ├── icon48.png
+    └── icon128.png
+```
 
-- You can enter domains with or without "www." (e.g., both "youtube.com" and "www.youtube.com" will work)
-- The extension automatically handles different URL formats (http://, https://, www., etc.)
-- Time is counted in seconds but displayed in minutes
-- You can modify or remove website limits at any time
-- The blocking is per-domain, so it works across all pages of the monitored websites
-- The timer position resets to top-right when you reload or visit a different page
-- The timer overlay has maximum z-index to stay above all website content
+### Technical Details
+- Built with Manifest V3
+- Uses Chrome Storage API for data persistence
+- Implements Chart.js for data visualization
+- Uses service worker for background processing
+- Content script for real-time tracking
+- Modular architecture for easy maintenance
 
-## Technical Details
-
-The extension uses:
-- Chrome Storage API for saving settings and time data
-- Chrome Tabs API for tracking active tabs
-- Chrome Windows API for detecting window focus
-- Background service worker for continuous time tracking
-- Content script for timer overlay functionality
-- Real-time updates in the options page
+### Permissions Used
+- `storage`: For saving website data and settings
+- `webNavigation`: For tracking website visits
+- `tabs`: For accessing tab information
+- `alarms`: For periodic time checks
+- `host_permissions`: For tracking across all websites
 
 ## Privacy
 
-This extension:
-- Only tracks time on websites you specifically add
-- Stores all data locally in your browser
-- Doesn't send any data to external servers
-- Doesn't track your browsing history or activities on non-monitored sites
+- All data is stored locally on your device
+- No data is sent to external servers
+- You can clear your data at any time
+- The extension only tracks the domains you visit, not specific pages
 
-## Troubleshooting
+## Known Issues
 
-If the extension isn't working as expected:
+1. Chart.js loading issues in some scenarios
+2. Time calculation edge cases being addressed
+3. Working on improving blocking notification system
 
-1. Check if the website domain is entered correctly
-2. Verify that the extension is enabled in Chrome
-3. Try reloading the monitored website
-4. Check the options page to verify time limits
-5. Restart Chrome if settings aren't applying
+## Future Enhancements
+
+1. Export/Import settings
+2. Custom blocking messages
+3. More detailed analytics
+4. Site categories and grouping
+5. Customizable themes
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is open source and available under the MIT License. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, please open an issue in the GitHub repository or contact the maintainers. 
